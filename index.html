@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Keasyfit Aldaia — Control de Turnos</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    background-color: #7ab52b;
+    background-image:
+      radial-gradient(ellipse at 50% 40%, rgba(255,255,255,0.18) 0%, transparent 60%);
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  .watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(520px, 90vw);
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 0;
+    user-select: none;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .logo-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.92);
+    border-radius: 16px;
+    padding: 12px 28px;
+    margin-bottom: 6px;
+  }
+
+  .logo-text {
+    font-size: 26px;
+    font-weight: 800;
+    color: #5a9a1a;
+    letter-spacing: 1px;
+  }
+
+  .logo-sub {
+    font-size: 10px;
+    color: #7ab52b;
+    font-weight: 600;
+    letter-spacing: 2px;
+    display: block;
+    margin-top: -4px;
+  }
+
+  .subtitle {
+    color: rgba(255,255,255,0.9);
+    font-size: 14px;
+    margin-top: 6px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.95);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #7ab52b;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .employee-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .emp-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border-radius: 50px;
+    border: 2px solid #c8e6a0;
+    background: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: #3a6e0a;
+    transition: all 0.15s;
+    position: relative;
+  }
+
+  .emp-btn:hover { border-color: #7ab52b; background: #f0f9e0; }
+  .emp-btn.active { background: #7ab52b; color: white; border-color: #5a9a1a; }
+  .emp-btn.active .emp-name-edit { color: white; }
+
+  .emp-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #c8e6a0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #3a6e0a;
+    flex-shrink: 0;
+  }
+  .emp-btn.active .emp-avatar { background: rgba(255,255,255,0.3); color: white; }
+
+  .emp-name-edit {
+    border: none; background: transparent;
+    font-size: 14px; font-weight: 600;
+    color: #3a6e0a;
+    cursor: pointer;
+    outline: none;
+    width: auto;
+    min-width: 60px;
+    max-width: 120px;
+  }
+  .emp-name-edit:focus {
+    border-bottom: 2px solid #7ab52b;
+    cursor: text;
+  }
+
+  .week-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .week-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1.5px solid #c8e6a0;
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #3a6e0a;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .week-btn:hover { border-color: #7ab52b; background: #f0f9e0; }
+  .week-btn.active { background: #7ab52b; color: white; border-color: #5a9a1a; font-weight: 700; }
+
+  .arrow-btn {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 1.5px solid #c8e6a0;
+    background: white;
+    cursor: pointer;
+    font-size: 16px;
+    color: #3a6e0a;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .arrow-btn:hover { background: #f0f9e0; border-color: #7ab52b; }
+  .arrow-btn:disabled { opacity: 0.3; cursor: default; }
+
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+    min-width: 620px;
+  }
+
+  thead tr {
+    background: #f0f9e0;
+  }
+
+  th {
+    padding: 10px 8px;
+    text-align: center;
+    font-weight: 700;
+    color: #3a6e0a;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #c8e6a0;
+  }
+
+  th.day-header {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  th .weekday { display: block; font-size: 12px; font-weight: 700; }
+  th .date { display: block; font-size: 10px; font-weight: 400; color: #5a9a1a; }
+
+  td {
+    padding: 0;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom: 1px solid #eef5e0;
+  }
+
+  td.emp-cell { font-weight: 700; color: #3a6e0a; padding: 12px 10px; background: #f8fdf0; }
+
+  .shift-cell {
+    padding: 4px;
+    height: 52px;
+  }
+
+  .shift-inner {
+    height: 100%;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    border: 1.5px solid transparent;
+    padding: 4px 2px;
+  }
+
+  .shift-inner.libre {
+    background: #f5f5f5;
+    color: #aaa;
+    cursor: default;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .shift-inner.turno {
+    background: #f0f9e0;
+    border-color: #c8e6a0;
+    color: #3a6e0a;
+  }
+
+  .shift-inner.turno:hover {
+    background: #e0f4c8;
+    border-color: #7ab52b;
+    transform: scale(1.03);
+  }
+
+  .shift-inner.turno.worked {
+    background: #7ab52b;
+    border-color: #5a9a1a;
+    color: white;
+  }
+
+  .shift-inner.turno.worked:hover {
+    background: #5a9a1a;
+  }
+
+  .shift-time {
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .check-icon {
+    font-size: 14px;
+    margin-top: 2px;
+  }
+
+  .festivo-badge {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .festivo-nacional { background: #fff3cd; color: #856404; }
+  .festivo-autonomo { background: #d1ecf1; color: #0c5460; }
+  .festivo-local { background: #f8d7da; color: #721c24; }
+  .festivo-vacaciones { background: #e2d9f3; color: #4a2d72; }
+
+  .week-title-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .week-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: #3a6e0a;
+  }
+
+  .worked-count {
+    font-size: 12px;
+    color: #7ab52b;
+    font-weight: 600;
+    background: #f0f9e0;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid #c8e6a0;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #eef5e0;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #555;
+  }
+
+  .legend-dot {
+    width: 14px; height: 14px;
+    border-radius: 4px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #888;
+    font-size: 14px;
+  }
+
+  .reset-btn {
+    font-size: 11px;
+    color: #e05050;
+    background: none;
+    border: 1px solid #f5c6c6;
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .reset-btn:hover { background: #fff0f0; }
+
+  @media (max-width: 600px) {
+    .card { padding: 14px; }
+    .shift-cell { height: 44px; }
+    .shift-time { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<svg class="watermark" viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg">
+  <text x="150" y="55" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="52" font-weight="900" fill="white" letter-spacing="2">KEASY</text>
+  <text x="150" y="105" text-anchor="middle" font-family="Arial,sans-serif" font-size="20" font-weight="400" fill="white" letter-spacing="8">FIT</text>
+</svg>
+
+<div class="container">
+
+  <header>
+    <div class="logo-header">
+      <div>
+        <span class="logo-text">KEASYFIT</span>
+        <span class="logo-sub">WE ARE THE FITNESS &nbsp;·&nbsp; ALDAIA</span>
+      </div>
+    </div>
+    <p class="subtitle">Control de Turnos — Abril 2026</p>
+  </header>
+
+  <div class="card">
+    <div class="section-label">Selecciona empleado</div>
+    <div class="employee-grid" id="empGrid"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Semana</div>
+    <div class="week-nav">
+      <button class="arrow-btn" id="prevWeek" onclick="changeWeek(-1)">&#8592;</button>
+      <div id="weekBtns" style="display:flex;flex-wrap:wrap;gap:8px;flex:1;"></div>
+      <button class="arrow-btn" id="nextWeek" onclick="changeWeek(1)">&#8594;</button>
+    </div>
+  </div>
+
+  <div class="card" id="scheduleCard">
+    <div class="week-title-bar">
+      <span class="week-label" id="weekLabel"></span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="worked-count" id="workedCount"></span>
+        <button class="reset-btn" onclick="resetWeek()">Resetear semana</button>
+      </div>
+    </div>
+    <div class="table-wrapper" id="tableWrapper"></div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#f0f9e0;border:1.5px solid #c8e6a0;"></div> Turno disponible</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#7ab52b;"></div> Día trabajado</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f5f5f5;"></div> Libre</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'keasyfit_turnos_v2';
+const NAMES_KEY = 'keasyfit_names_v1';
+
+const defaultNames = { ALBERTO: 'ALBERTO', RAUL: 'RAÚL', AARON: 'AARÓN', VICENTE: 'VICENTE' };
+
+const DIAS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+
+const SEMANAS = [
+  {
+    label: 'Sem 1', dates: ['30/03','31/03','01/04','02/04','03/04','04/04','05/04'],
+    festivo: { tipo: 'vacaciones', label: 'Vacaciones / Festivo Nacional' },
+    turnos: {
+      ALBERTO: ['08:00-16:00','LIBRE','LIBRE','LIBRE','LIBRE','LIBRE','LIBRE'],
+      RAUL:    ['08:00-16:00','08:00-16:00','08:00-16:00','08:00-16:00','10:00-18:00','LIBRE','LIBRE'],
+      AARON:   ['16:00-22:00','16:00-22:00','16:00-22:00','16:00-22:00','LIBRE','10:00-18:00','LIBRE'],
+      VICENTE: ['10:00-18:00','10:00-18:00','10:00-18:00','10:00-18:00','LIBRE','LIBRE','LIBRE'],
+    }
+  },
+  {
+    label: 'Sem 2', dates: ['06/04','07/04','08/04','09/04','10/04','11/04','12/04'],
+    festivo: { tipo: 'autonomo', label: 'Festivo Autonómico' },
+    turnos: {
+      ALBERTO: ['LIBRE','LIBRE','LIBRE','LIBRE','LIBRE','LIBRE','LIBRE'],
+      AARON:   ['10:00-18:00','08:00-16:00','08:00-16:00','08:00-16:00','08:00-16:00','LIBRE','LIBRE'],
+      RAUL:    ['LIBRE','16:00-22:00','16:00-22:00','16:00-22:00','16:00-22:00','10:00-18:00','LIBRE'],
+      VICENTE: ['LIBRE','10:00-18:00','10:00-18:00','10:00-18:00','10:00-18:00','LIBRE','LIBRE'],
+    }
+  },
+  {
+    label: 'Sem 3', dates: ['13/04','14/04','15/04','16/04','17/04','18/04','19/04'],
+    festivo: { tipo: 'local', label: 'Festivo Local' },
+    turnos: {
+      ALBERTO: ['LIBRE','LIBRE','LIBRE','LIBRE','LIBRE','LIBRE','LIBRE'],
+      RAUL:    ['10:00-18:00','08:00-16:00','08:00-16:00','08:00-16:00','08:00-16:00','LIBRE','LIBRE'],
+      AARON:   ['LIBRE','16:00-22:00','16:00-22:00','16:00-22:00','16:00-22:00','10:00-18:00','LIBRE'],
+      VICENTE: ['LIBRE','10:00-18:00','10:00-18:00','10:00-18:00','10:00-18:00','LIBRE','LIBRE'],
+    }
+  },
+  {
+    label: 'Sem 4', dates: ['20/04','21/04','22/04','23/04','24/04','25/04','26/04'],
+    festivo: null,
+    turnos: {
+      ALBERTO: ['LIBRE','LIBRE','LIBRE','LIBRE','LIBRE','LIBRE','LIBRE'],
+      AARON:   ['08:00-16:00','08:00-16:00','08:00-16:00','08:00-16:00','08:00-16:00','LIBRE','LIBRE'],
+      RAUL:    ['16:00-22:00','16:00-22:00','16:00-22:00','16:00-22:00','16:00-22:00','10:00-18:00','LIBRE'],
+      VICENTE: ['10:00-18:00','10:00-18:00','10:00-18:00','10:00-18:00','10:00-18:00','LIBRE','LIBRE'],
+    }
+  },
+  {
+    label: 'Sem 5', dates: ['27/04','28/04','29/04','30/04','01/05','02/05','03/05'],
+    festivo: { tipo: 'nacional', label: 'Festivo Nacional (1 Mayo)' },
+    turnos: {
+      ALBERTO: ['LIBRE','LIBRE','LIBRE','LIBRE','LIBRE','LIBRE','LIBRE'],
+      RAUL:    ['08:00-16:00','08:00-16:00','08:00-16:00','08:00-16:00','LIBRE','LIBRE','LIBRE'],
+      AARON:   ['16:00-22:00','16:00-22:00','16:00-22:00','16:00-22:00','10:00-18:00','10:00-18:00','LIBRE'],
+      VICENTE: ['10:00-18:00','10:00-18:00','10:00-18:00','10:00-18:00','LIBRE','LIBRE','LIBRE'],
+    }
+  }
+];
+
+const EMPLOYEES = ['ALBERTO','RAUL','AARON','VICENTE'];
+
+let state = {
+  selectedEmp: 'RAUL',
+  selectedWeek: 1,
+  worked: {},
+  names: { ...defaultNames }
+};
+
+function loadState() {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    if (s) { const p = JSON.parse(s); state.worked = p.worked || {}; }
+  } catch(e) {}
+  try {
+    const n = localStorage.getItem(NAMES_KEY);
+    if (n) state.names = { ...defaultNames, ...JSON.parse(n) };
+  } catch(e) {}
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ worked: state.worked }));
+    localStorage.setItem(NAMES_KEY, JSON.stringify(state.names));
+  } catch(e) {}
+}
+
+function workedKey(emp, week, day) { return `${emp}_w${week}_d${day}`; }
+
+function toggleWorked(emp, week, day) {
+  const k = workedKey(emp, week, day);
+  state.worked[k] = !state.worked[k];
+  saveState();
+  renderTable();
+}
+
+function resetWeek() {
+  for (let d = 0; d < 7; d++) {
+    delete state.worked[workedKey(state.selectedEmp, state.selectedWeek, d)];
+  }
+  saveState();
+  renderTable();
+}
+
+function getInitials(name) {
+  return name.slice(0,2).toUpperCase();
+}
+
+function renderEmployees() {
+  const grid = document.getElementById('empGrid');
+  grid.innerHTML = '';
+  EMPLOYEES.forEach(emp => {
+    const btn = document.createElement('button');
+    btn.className = 'emp-btn' + (state.selectedEmp === emp ? ' active' : '');
+    btn.onclick = (e) => { if (e.target.tagName !== 'INPUT') { state.selectedEmp = emp; render(); } };
+
+    const av = document.createElement('div');
+    av.className = 'emp-avatar';
+    av.textContent = getInitials(state.names[emp]);
+
+    const inp = document.createElement('input');
+    inp.className = 'emp-name-edit';
+    inp.value = state.names[emp];
+    inp.title = 'Haz clic para editar el nombre';
+    inp.style.width = (state.names[emp].length * 9 + 16) + 'px';
+    inp.addEventListener('input', () => {
+      inp.style.width = (inp.value.length * 9 + 16) + 'px';
+    });
+    inp.addEventListener('change', () => {
+      state.names[emp] = inp.value.toUpperCase() || defaultNames[emp];
+      saveState();
+      renderEmployees();
+    });
+    inp.addEventListener('click', e => e.stopPropagation());
+
+    btn.appendChild(av);
+    btn.appendChild(inp);
+    grid.appendChild(btn);
+  });
+}
+
+function renderWeekBtns() {
+  const container = document.getElementById('weekBtns');
+  container.innerHTML = '';
+  SEMANAS.forEach((sem, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'week-btn' + (state.selectedWeek === i ? ' active' : '');
+    btn.textContent = sem.label + ' (' + sem.dates[0] + ' – ' + sem.dates[6] + ')';
+    btn.onclick = () => { state.selectedWeek = i; render(); };
+    container.appendChild(btn);
+  });
+  document.getElementById('prevWeek').disabled = state.selectedWeek === 0;
+  document.getElementById('nextWeek').disabled = state.selectedWeek === SEMANAS.length - 1;
+}
+
+function changeWeek(dir) {
+  const next = state.selectedWeek + dir;
+  if (next >= 0 && next < SEMANAS.length) { state.selectedWeek = next; render(); }
+}
+
+function renderTable() {
+  const sem = SEMANAS[state.selectedWeek];
+  const emp = state.selectedEmp;
+  const turnos = sem.turnos[emp] || [];
+
+  document.getElementById('weekLabel').textContent =
+    sem.dates[0] + ' – ' + sem.dates[6];
+
+  let worked = 0;
+  for (let d = 0; d < 7; d++) {
+    if (state.worked[workedKey(emp, state.selectedWeek, d)]) worked++;
+  }
+  document.getElementById('workedCount').textContent = worked + ' días trabajados';
+
+  let html = '<table>';
+  html += '<thead><tr>';
+  html += '<th style="width:90px;">Empleado</th>';
+  DIAS.forEach((dia, i) => {
+    html += `<th class="day-header"><span class="weekday">${dia}</span><span class="date">${sem.dates[i]}</span></th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  if (sem.festivo) {
+    const cls = 'festivo-' + sem.festivo.tipo;
+    html += `<tr><td colspan="8" style="padding:6px 10px;background:#fafff5;border-bottom:1px solid #eef5e0;">
+      <span class="festivo-badge ${cls}">${sem.festivo.label}</span>
+    </td></tr>`;
+  }
+
+  html += '<tr>';
+  html += `<td class="emp-cell">${state.names[emp]}</td>`;
+  turnos.forEach((turno, di) => {
+    const isLibre = turno === 'LIBRE';
+    const isWorked = !isLibre && state.worked[workedKey(emp, state.selectedWeek, di)];
+    const onclick = isLibre ? '' : `onclick="toggleWorked('${emp}',${state.selectedWeek},${di})"`;
+    let innerCls = isLibre ? 'libre' : ('turno' + (isWorked ? ' worked' : ''));
+    html += `<td class="shift-cell">
+      <div class="shift-inner ${innerCls}" ${onclick} title="${isLibre ? 'Día libre' : (isWorked ? 'Click para desmarcar' : 'Click para marcar como trabajado')}">
+        ${isLibre
+          ? '<span class="shift-time">LIBRE</span>'
+          : `<span class="shift-time">${turno.replace('-','–')}</span>${isWorked ? '<span class="check-icon">✓</span>' : ''}`
+        }
+      </div>
+    </td>`;
+  });
+  html += '</tr>';
+  html += '</tbody></table>';
+
+  document.getElementById('tableWrapper').innerHTML = html;
+}
+
+function render() {
+  renderEmployees();
+  renderWeekBtns();
+  renderTable();
+}
+
+loadState();
+render();
+</script>
+</body>
+</html>
